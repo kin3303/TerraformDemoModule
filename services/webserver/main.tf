@@ -112,6 +112,7 @@ resource "aws_autoscaling_group" "example" {
 }
 */
 
+/*
 resource "aws_autoscaling_group" "example" {
   launch_configuration = aws_launch_configuration.example.name
   vpc_zone_identifier  = data.aws_subnet_ids.default.ids
@@ -128,6 +129,36 @@ resource "aws_autoscaling_group" "example" {
     propagate_at_launch = true
   }
 }
+*/
+
+resource "aws_autoscaling_group" "example" {
+  # 시작 구성에 이름 변경
+  name = "${var.cluster_name}-${aws_launch_configuration.example.name}"
+
+  launch_configuration = aws_launch_configuration.example.name
+  vpc_zone_identifier  = data.aws_subnet_ids.default.ids
+
+  target_group_arns = [aws_lb_target_group.asg.arn]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+  health_check_type = "ELB"
+
+  min_size = var.min_size
+  max_size = var.max_size
+
+  # ASG 배포 완료를 고려하기 전에 최소 지정된 인스턴스 상태 확인을 통과할 때까지 대기
+  min_elb_capacity = var.min_size 
+
+  # 이 ASG 를 교체할 때는 먼저 교체용 ASG 를 생성한 다음 원본만 삭제 (무중단 배포)
+  lifecycle {
+      create_before_destroy = true
+  }
+
+  tag {
+    key                 = "Name"
+    value               = var.cluster_name
+    propagate_at_launch = true
+  }
+}
+
 
 /*
 resource "aws_security_group" "instance" {
